@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/658902569784867758/c59edb2332d745cba874935dcbccfe01/artifacts
+end_time: 1740844920027
+entry_point_name: ''
+experiment_id: '658902569784867758'
+lifecycle_stage: active
+run_id: c59edb2332d745cba874935dcbccfe01
+run_name: honorable-ox-501
+run_uuid: c59edb2332d745cba874935dcbccfe01
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1740844919989
+status: 4
+tags: []
+user_id: andma

@@ -1,0 +1,6 @@
+artifact_location: mlflow-artifacts:/658902569784867758
+creation_time: 1740844862364
+experiment_id: '658902569784867758'
+last_update_time: 1740844862364
+lifecycle_stage: active
+name: news_recommendation

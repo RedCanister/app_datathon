@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/ff1443272a174e828748a0ed270fef6b/artifacts
+end_time: 1740844754198
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: ff1443272a174e828748a0ed270fef6b
+run_name: gaudy-kit-825
+run_uuid: ff1443272a174e828748a0ed270fef6b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1740844752043
+status: 4
+tags: []
+user_id: andma
