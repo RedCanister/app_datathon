@@ -15,11 +15,18 @@ from app.model_utils import load_model, predict_recommendations, cold_start_reco
 
 app = FastAPI(title="News Recommendation API", version="1.0")
 
-# Carregar modelo no startup
-model = load_model("models:/news_recommendation/latest")
+# Carregar o modelo com pickle no startup
+try:
+    with open("lightfm_model.pkl", "rb") as f:
+        model = pickle.load(f)
+    print("Modelo carregado com sucesso!")
+except FileNotFoundError:
+    model = None
+    print("Arquivo do modelo não encontrado.")
+except Exception as e:
+    model = None
+    print(f"Erro ao carregar o modelo: {e}")
 
-# Carregar modelo no startup
-model = load_latest_model("news_recommendation")
 
 
 @app.get("/")
