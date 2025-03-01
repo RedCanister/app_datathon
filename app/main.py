@@ -16,11 +16,7 @@ from app.model_utils import load_model, predict_recommendations, cold_start_reco
 app = FastAPI(title="News Recommendation API", version="1.0")
 
 # Carregar modelo no startup
-model = load_model("models:/news_recommendation/latest")
-
-# Carregar modelo no startup
-model = load_latest_model("news_recommendation")
-
+model = load_latest_model("lightfm_model.pkl")
 
 @app.get("/")
 async def root():
