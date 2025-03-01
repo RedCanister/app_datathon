@@ -1,13 +1,15 @@
 from fastapi import FastAPI, HTTPException
 from typing import List, Dict
 import mlflow.pyfunc
+import uvicorn
 import numpy as np
 from app.mlflow_utils import (
     log_model_to_mlflow,
     get_model_info,
     get_experiment_metrics,
     list_models,
-    update_model
+    update_model,
+    load_latest_model
 )
 from app.model_utils import load_model, predict_recommendations, cold_start_recommendations
 
@@ -15,6 +17,9 @@ app = FastAPI(title="News Recommendation API", version="1.0")
 
 # Carregar modelo no startup
 model = load_model("models:/news_recommendation/latest")
+
+# Carregar modelo no startup
+model = load_latest_model("news_recommendation")
 
 
 @app.get("/")
@@ -88,3 +93,17 @@ async def update():
     global model
     model = update_model()
     return {"message": "Modelo atualizado com sucesso!"}
+
+
+@app.get("/recommend")
+async def recommend(user_id: str, history: str):
+    if model is None:
+        return {"error": "Modelo não carregado. Verifique MLflow."}
+    
+    history = list(map(int, history.split(",")))
+    recommendations = model.predict({"user_id": user_id, "history": history})
+    
+    return {"recommendations": recommendations}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

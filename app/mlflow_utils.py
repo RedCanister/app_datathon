@@ -6,6 +6,31 @@ MLFLOW_TRACKING_URI = "http://localhost:5000"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 
+import mlflow.pyfunc
+
+MLFLOW_TRACKING_URI = "http://localhost:5000"  # Ajuste se necessário
+
+def load_latest_model(model_name: str):
+    """
+    Carrega o modelo mais recente registrado no MLflow Model Registry.
+    
+    Args:
+        model_name (str): Nome do modelo registrado no MLflow.
+
+    Returns:
+        mlflow.pyfunc.PyFuncModel: Modelo carregado para inferência.
+    """
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    
+    try:
+        model_uri = f"models:/{model_name}/latest"
+        model = mlflow.pyfunc.load_model(model_uri)
+        print(f"✅ Modelo '{model_name}' carregado com sucesso!")
+        return model
+    except Exception as e:
+        print(f"❌ Erro ao carregar modelo '{model_name}': {e}")
+        return None
+
 def log_model_to_mlflow(model_path: str):
     """
     Registra um novo modelo treinado no MLflow.
