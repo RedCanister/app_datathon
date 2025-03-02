@@ -18,7 +18,7 @@ app = FastAPI(title="News Recommendation API", version="1.0")
 
 # Carregar o modelo com pickle no startup
 try:
-    with open("lightfm_model.pkl", "rb") as f:
+    with open("mlruns\models\lightfm_model.pkl", "rb") as f:
         model = pickle.load(f)
     print("Modelo carregado com sucesso!")
 except FileNotFoundError:
@@ -61,7 +61,7 @@ async def log_model():
     """
     Registra um novo modelo treinado no MLflow.
     """
-    model_path = "models/news_recommendation.pkl"
+    model_path = model
     response = log_model_to_mlflow(model_path)
     return response
 
