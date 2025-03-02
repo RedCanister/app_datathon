@@ -6,8 +6,6 @@ MLFLOW_TRACKING_URI = "http://localhost:5000"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 
-import mlflow.pyfunc
-
 MLFLOW_TRACKING_URI = "http://localhost:5000"  # Ajuste se necessário
 
 def load_latest_model(model_name: str):

@@ -29,6 +29,13 @@ except Exception as e:
     model = None
     print(f"Erro ao carregar o modelo: {e}")
 
+"""SEÇÃO DE RECOMENDAÇÕES"""
+
+"""
+    Ao acessar a aplicação, o usuário deve chegar em uma página onde ele recebe recomendações de notícias automaticamente, baseado nas notícias mais populares
+    O usuário também deve ter a opção de fazer login, e aqui, ele vai receber um histórico aleatório que ele pode verificar, e então, ele será recomendado 
+    notícias baseado nesse histórico. Ele deve ser capaz de fazer login ou sair facilmente para testar novas recomendações.
+"""
 
 # A página inicial. Quando o usuário chegar aqui, ele deve receber notícias para novos usuários, a partir do cold-start, sem precisar fazer nada
 @app.get("/")
