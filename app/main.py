@@ -3,7 +3,6 @@ from typing import List, Dict
 import pickle
 import mlflow.pyfunc
 import uvicorn
-import pickle
 import numpy as np
 from app.mlflow_utils import (
     log_model_to_mlflow,
@@ -62,7 +61,7 @@ async def root():
 
 # Depois que o usuário logar, ele deve colocar apenas o nome, e a partir daí ele irá receber um id aleatório com um histórico pré-definido, ele
 # ele poderá saber qual é o histórico, e ele receberá recomendações baseado nele
-@app.post("/predict")
+@app.post("/predict/{user_id}")
 async def predict(user_id: str):
     """
     Gera recomendações para um usuário com base no histórico de leitura.
@@ -96,7 +95,7 @@ async def cold_start():
 """
 
 # Aqui, o usuário pode registrar um modelo novo, que ficará guardado no banco de dados dos Mlflow, que é inicializado automaticamente no start-up
-@app.post("/log_model")
+@app.post("/log_model/{model}")
 async def log_model(model: str):
     """
     Registra um novo modelo treinado no MLflow.
@@ -113,7 +112,7 @@ async def update():
     """
     global model
     # Atualiza passando a URI do modelo no Model Registry
-    update_response = update_model("models:/news_recommendation/latest")
+    update_response = update_model("models:/recommendation_model/latest")
     if update_response["status"] == "success":
         model = update_response["model"]
     return update_response
@@ -151,11 +150,11 @@ async def load_model_route():
     """
     Carrega (novamente) o modelo mais recente do MLflow e retorna as informações da operação.
     """
-    response = load_latest_model("news_recommendation")
+    response = load_latest_model("recommendation_model")
     return response
 
 # Nessa página ele pode fazer uma recomendação de teste com o id do usuário e o histórico associado
-@app.get("/recommend")
+@app.get("/recommend/{user_id}")
 async def recommend(user_id: str):
     """
     Realiza uma recomendação de teste para o usuário, utilizando seu histórico.
