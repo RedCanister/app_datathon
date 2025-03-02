@@ -122,6 +122,15 @@ async def models():
     models = list_models()
     return models
 
+# Aqui ele pode listar todos os modelos mais recentes
+@app.get("/load_model")
+async def load_model():
+    """
+    Lista os modelos disponíveis no MLflow.
+    """
+    model = load_model()
+    return model
+
 # Nessa página ele pode fazer uma recomendação de teste com o id do usuário e o histórico associado
 @app.get("/recommend")
 async def recommend(user_id: str, history: str):

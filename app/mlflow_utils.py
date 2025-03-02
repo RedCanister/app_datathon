@@ -5,9 +5,6 @@ import os
 MLFLOW_TRACKING_URI = "http://localhost:5000"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
-
-MLFLOW_TRACKING_URI = "http://localhost:5000"  # Ajuste se necessário
-
 def load_latest_model(model_name: str):
     """
     Carrega o modelo mais recente registrado no MLflow Model Registry.
@@ -44,7 +41,7 @@ def get_model_info():
     Retorna informações sobre o modelo atual registrado no MLflow.
     """
     client = mlflow.tracking.MlflowClient()
-    model_name = "news_recommendation"
+    model_name = "lightfm_model"
     model = client.get_latest_versions(model_name, stages=["None"])
     return model
 
@@ -68,10 +65,10 @@ def list_models():
     return registered_models
 
 
-def update_model():
+def update_model(model_path: str):
     """
     Atualiza o modelo usado pela API para a última versão registrada no MLflow.
     """
-    model_uri = "models:/news_recommendation/latest"
+    model_uri = model_path
     model = mlflow.pyfunc.load_model(model_uri)
     return model
