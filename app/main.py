@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from typing import List, Dict
+import pickle
 import mlflow.pyfunc
 import uvicorn
 import numpy as np

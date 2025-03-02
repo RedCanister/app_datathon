@@ -7,7 +7,12 @@ echo "⏳ Aguardando MLflow iniciar..."
 sleep 5  # Dá tempo para MLflow iniciar
 
 echo "🔥 Iniciando FastAPI..."
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
+
+sleep 3
+
+echo "🎨 Iniciando Streamlit..."
+streamlit run frontend/app.py
 
 # Para executar, a partir de um terminal bash, faça:
 # chmod +x start.sh
