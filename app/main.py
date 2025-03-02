@@ -30,12 +30,13 @@ except Exception as e:
     print(f"Erro ao carregar o modelo: {e}")
 
 
-
+# A página inicial. Quando o usuário chegar aqui, ele deve receber notícias para novos usuários, a partir do cold-start, sem precisar fazer nada
 @app.get("/")
 async def root():
     return {"message": "API de Recomendação de Notícias rodando!"}
 
-
+# Depois que o usuário logar, ele deve colocar apenas o nome, e a partir daí ele irá receber um id aleatório com um histórico pré-definido, ele
+# ele poderá saber qual é o histórico, e ele receberá recomendações baseado nele
 @app.post("/predict")
 async def predict(user_id: str, history: List[int]):
     """
@@ -47,7 +48,7 @@ async def predict(user_id: str, history: List[int]):
     recommendations = predict_recommendations(model, user_id, history)
     return {"user_id": user_id, "recommendations": recommendations}
 
-
+# Nesse end-point a API resgata as notícias mais relevantes para qualquer um que não esteja logado, o que aparece na página inicial.
 @app.get("/cold_start")
 async def cold_start():
     """
@@ -57,6 +58,17 @@ async def cold_start():
     return {"recommendations": recommendations}
 
 
+"""SEÇÃO DO MLFLOW"""
+
+"""
+    Os usuários, ao usar a aplicação do streamlit, deve ter acesso a duas seções dentro do app, das recomendações e do monitoramento.
+
+    - Ele deve ser capaz de registrar e atualizar novos modelos com log_model, update_model e usar recommend para testá-los 
+    - Ele deve ter retorno de informações dos end-points get_model_info, get_experiment_metrics, list_models.
+
+"""
+
+# Aqui, o usuário pode registrar um modelo novo, que ficará guardado no banco de dados dos Mlflow, que é inicializado automaticamente no start-up
 @app.post("/log_model")
 async def log_model():
     """
@@ -66,34 +78,7 @@ async def log_model():
     response = log_model_to_mlflow(model_path)
     return response
 
-
-@app.get("/get_model_info")
-async def get_model():
-    """
-    Retorna informações sobre o modelo atual registrado no MLflow.
-    """
-    model_info = get_model_info()
-    return model_info
-
-
-@app.get("/get_experiment_metrics")
-async def experiment_metrics():
-    """
-    Obtém as métricas do experimento atual no MLflow.
-    """
-    metrics = get_experiment_metrics()
-    return metrics
-
-
-@app.get("/list_models")
-async def models():
-    """
-    Lista os modelos disponíveis no MLflow.
-    """
-    models = list_models()
-    return models
-
-
+# Aqui ele pode atualizar o modelo atual para uma versão mais recente
 @app.put("/update_model")
 async def update():
     """
@@ -103,7 +88,34 @@ async def update():
     model = update_model()
     return {"message": "Modelo atualizado com sucesso!"}
 
+# Aqui ele pode resgatar os dados do modelo para exibir na tela do usuário
+@app.get("/get_model_info")
+async def get_model():
+    """
+    Retorna informações sobre o modelo atual registrado no MLflow.
+    """
+    model_info = get_model_info()
+    return model_info
 
+# Aqui ele pode resgatar as métricas mais recentes da execução mais recente registrada
+@app.get("/get_experiment_metrics")
+async def experiment_metrics():
+    """
+    Obtém as métricas do experimento atual no MLflow.
+    """
+    metrics = get_experiment_metrics()
+    return metrics
+
+# Aqui ele pode listar todos os modelos mais recentes
+@app.get("/list_models")
+async def models():
+    """
+    Lista os modelos disponíveis no MLflow.
+    """
+    models = list_models()
+    return models
+
+# Nessa página ele pode fazer uma recomendação de teste com o id do usuário e o histórico associado
 @app.get("/recommend")
 async def recommend(user_id: str, history: str):
     if model is None:
