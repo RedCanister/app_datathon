@@ -38,9 +38,13 @@ def get_user_history(userId: str, model: pd.DataFrame):
     Returns:
         dict: Dicionário contendo as informações do usuário ou None se não encontrado.
     """
+
     user_data = model[['history']][model["userId"] == userId]
     
     if user_data.empty:
         return None  # Retorna None se o usuário não for encontrado
+    
+    user_data = user_data.values[0][0]
+    user_data = [i.strip() for i in user_data]
 
-    return user_data.values[0][0]  # Retorna como lista de dicionários
+    return user_data  # Retorna como lista de dicionários
