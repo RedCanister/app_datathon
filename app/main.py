@@ -15,7 +15,7 @@ from app.mlflow_utils import (
 )
 from app.model_utils import load_model, predict_recommendations, cold_start_recommendations, get_user_history
 
-app = FastAPI(title="News Recommendation API", version="1.0")  
+app = FastAPI(title="News Recommendation API", version="1.0")
 
 mlflow.autolog()
 
@@ -37,20 +37,29 @@ mlflow.set_experiment("news_recommendation")
 model = load_local_model()
 
 # Carregando dados dos usuários
-with open(r"data\user_part_0.pkl", "rb") as f:
-    user_data =  pickle.load(f)
-    print("Debug: Dados de usuário carregados com sucesso!")
+try:
+    with open(r"data\user_part_0.pkl", "rb") as f:
+        user_data =  pickle.load(f)
+        print("Debug: Dados de usuário carregados com sucesso!")
+except FileNotFoundError:
+    print("Error: user_part_0.pkl not found")
+    user_data = None
 
 # Carregando dados das notícias
-with open(r"data\news_label_0.pkl", "rb") as f:
-    news_data =  pickle.load(f)
-    print("Debug: Dados de notícias carregados com sucesso!")
+try:
+    with open(r"data\news_label_0.pkl", "rb") as f:
+        news_data =  pickle.load(f)
+        print("Debug: Dados de notícias carregados com sucesso!")
+except FileNotFoundError:
+    print("Error: news_label_0.pkl not found")
+    news_data = None
+
 
 if model:
     print("Debug: Modelo carregado com sucesso!")
 
     model_name = "recommendation_model"
-    
+
     try:
         # Tenta buscar o modelo no Model Registry
         registered_model = mlflow.pyfunc.load_model(f"models:/{model_name}/latest")
@@ -61,7 +70,7 @@ if model:
             mlflow.sklearn.log_model(model, model_name)
             mlflow.log_param("source", "local_file")
             mlflow.set_tag("model_type", "LightFM")
-        
+
         print("Debug: Modelo registrado no MLflow!")
 
 
@@ -98,12 +107,22 @@ async def predict(user_id: str):  # Certifique-se de que user_id é um número
     try:
         print(f"🔍 Requisição recebida para user_id={user_id}")
 
+        if user_data is None:
+            raise HTTPException(status_code=500, detail="User data not loaded.")
+
+        if news_data is None:
+            raise HTTPException(status_code=500, detail="News data not loaded.")
+
         history = get_user_history(user_id, user_data)
         if not history:
             print("⚠️ Nenhum histórico encontrado, usando cold start.")
-            return await cold_start()
+            recommendations = cold_start_recommendations(news_data)
+            return {"user_id": user_id, "recommendations": recommendations}
 
-        recommendations = predict_recommendations(model, user_id, history)
+        if model is None:
+             raise HTTPException(status_code=500, detail="Model not loaded.")
+
+        recommendations = predict_recommendations(model, user_id, history, news_data)
         return {"user_id": user_id, "recommendations": recommendations}
 
     except Exception as e:
@@ -116,7 +135,9 @@ async def cold_start():
     """
     Retorna recomendações populares para novos usuários.
     """
-    recommendations = cold_start_recommendations()
+    if news_data is None:
+        raise HTTPException(status_code=500, detail="News data not loaded.")
+    recommendations = cold_start_recommendations(news_data)
     return {"recommendations": recommendations}
 
 """SEÇÃO DO MLFLOW"""
@@ -186,16 +207,22 @@ async def recommend(user_id: str):
     """
     if model is None:
         raise HTTPException(status_code=500, detail="Modelo não carregado. Verifique MLflow.")
-    
+
+    if user_data is None:
+        raise HTTPException(status_code=500, detail="User data not loaded.")
+
+    if news_data is None:
+        raise HTTPException(status_code=500, detail="News data not loaded.")
+
     history = get_user_history(user_id, user_data)
     if not history:
         return {"status": "error", "message": "Histórico não encontrado para o usuário."}
-    
+
     try:
-        recommendations = predict_recommendations(model, user_id, history)
+        recommendations = predict_recommendations(model, user_id, history, news_data)
         return {"status": "success", "recommendations": recommendations}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro na predição: {e}")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8080, reload=True)
