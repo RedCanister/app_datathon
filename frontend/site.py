@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
 
-API_URL = "http://localhost:8000"
+API_URL = "http://127.0.0.1:8080"  # Se FastAPI estiver em 8000
+
 
 st.set_page_config(layout="wide")
 

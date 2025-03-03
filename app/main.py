@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from mlflow.exceptions import MlflowException
 from pydantic import BaseModel
+import pandas as pd
 import pickle
 import mlflow
 import uvicorn
@@ -35,6 +36,16 @@ def load_local_model():
 mlflow.set_experiment("news_recommendation")
 model = load_local_model()
 
+# Carregando dados dos usuários
+with open(r"data\user_part_0.pkl", "rb") as f:
+    user_data =  pickle.load(f)
+    print("Debug: Dados de usuário carregados com sucesso!")
+
+# Carregando dados das notícias
+with open(r"data\news_label_0.pkl", "rb") as f:
+    news_data =  pickle.load(f)
+    print("Debug: Dados de notícias carregados com sucesso!")
+
 if model:
     print("Debug: Modelo carregado com sucesso!")
 
@@ -53,7 +64,6 @@ if model:
         
         print("Debug: Modelo registrado no MLflow!")
 
-import inspect
 
 print("\nRotas registradas na API:")
 for route in app.routes:
@@ -64,6 +74,16 @@ print("\nRotas disponíveis:")
 for route in app.routes:
     print(f"➡ {route.path} ({', '.join(route.methods)})")
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permite qualquer origem (Ajuste para segurança)
+    allow_credentials=True,
+    allow_methods=["*"],  # Permite qualquer método (GET, POST, etc.)
+    allow_headers=["*"],  # Permite qualquer cabeçalho
+)
+
 """SEÇÃO DE RECOMENDAÇÕES"""
 
 @app.get("/")
@@ -71,17 +91,25 @@ async def root():
     return app.openapi()
 
 @app.post("/predict/{user_id}")
-async def predict(user_id: str):
+async def predict(user_id: str):  # Certifique-se de que user_id é um número
     """
     Gera recomendações para um usuário com base no histórico de leitura.
     """
-    history = get_user_history(user_id)
-    
-    if not history:
-        return await cold_start()
-    
-    recommendations = predict_recommendations(model, user_id, history)
-    return {"user_id": user_id, "recommendations": recommendations}
+    try:
+        print(f"🔍 Requisição recebida para user_id={user_id}")
+
+        history = get_user_history(user_id, user_data)
+        if not history:
+            print("⚠️ Nenhum histórico encontrado, usando cold start.")
+            return await cold_start()
+
+        recommendations = predict_recommendations(model, user_id, history)
+        return {"user_id": user_id, "recommendations": recommendations}
+
+    except Exception as e:
+        print(f"❌ Erro na API /predict: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/cold_start")
 async def cold_start():
@@ -159,7 +187,7 @@ async def recommend(user_id: str):
     if model is None:
         raise HTTPException(status_code=500, detail="Modelo não carregado. Verifique MLflow.")
     
-    history = get_user_history(user_id)
+    history = get_user_history(user_id, user_data)
     if not history:
         return {"status": "error", "message": "Histórico não encontrado para o usuário."}
     

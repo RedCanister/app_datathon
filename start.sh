@@ -7,9 +7,16 @@ echo "⏳ Aguardando MLflow iniciar..."
 sleep 10  # Dá tempo para MLflow iniciar
 
 echo "🔥 Iniciando FastAPI..."
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
+uvicorn app.main:app --host 127.0.0.1 --port 8080 --reload &
 
-sleep 3
+# Esperar FastAPI ficar online
+echo "⏳ Aguardando FastAPI iniciar..."
+until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:8080/docs); do
+    printf '.'
+    sleep 2
+done
+
+echo "✅ FastAPI está rodando!"
 
 echo "🎨 Iniciando Streamlit..."
 streamlit run frontend/site.py
