@@ -4,7 +4,7 @@ import mlflow.pyfunc
 MLFLOW_TRACKING_URI = "http://localhost:5000"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
-def load_latest_model(model_name: str) -> dict:
+def load_latest_model(model_name = "recommendation_model") -> dict:
     """
     Carrega o modelo mais recente registrado no MLflow Model Registry.
 
@@ -30,7 +30,7 @@ def load_latest_model(model_name: str) -> dict:
             "model": None
         }
 
-def log_model_to_mlflow(model_path: str) -> dict:
+def log_model_to_mlflow(model_path = "recommendation_model") -> dict:
     """
     Registra um novo modelo treinado no MLflow e retorna informações sobre o registro.
 
@@ -41,7 +41,10 @@ def log_model_to_mlflow(model_path: str) -> dict:
         dict: Dicionário com status, mensagem e o run_id do MLflow.
     """
     with mlflow.start_run() as run:
-        mlflow.pyfunc.log_model("model", artifact_path="models", code_path=[model_path])
+        mlflow.pyfunc.log_model(
+            artifact_path=model_path, 
+            registered_model_name="recommendation_model", 
+            )
         mlflow.log_param("model_version", "latest")
         run_id = run.info.run_id
     return {
@@ -58,7 +61,7 @@ def get_model_info() -> dict:
         dict: Dicionário com status e uma lista de informações dos modelos.
     """
     client = mlflow.tracking.MlflowClient()
-    model_name = "lightfm_model"
+    model_name = "recommendation_model"
     try:
         model_versions = client.get_latest_versions(model_name, stages=["None"])
         models_info = []
@@ -83,7 +86,7 @@ def get_experiment_metrics() -> dict:
         dict: Dicionário com status e detalhes do experimento.
     """
     client = mlflow.tracking.MlflowClient()
-    experiments = client.list_experiments()
+    experiments = client.search_experiments()
     if experiments:
         latest_experiment = experiments[-1]
         experiment_data = {
@@ -106,7 +109,7 @@ def list_models() -> dict:
     """
     client = mlflow.tracking.MlflowClient()
     try:
-        registered_models = client.list_registered_models()
+        registered_models = client.search_registered_models()
         models_list = []
         for model in registered_models:
             models_list.append({
