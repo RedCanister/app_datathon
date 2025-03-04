@@ -13,11 +13,18 @@ from app.mlflow_utils import (
     update_model,
     load_latest_model
 )
-from app.model_utils import load_model, predict_recommendations, cold_start_recommendations, get_user_history
+from app.model_utils import (
+    load_model, 
+    predict_recommendations, 
+    cold_start_recommendations, 
+    get_user_history,
+    LightFMWrapper
+)
 
 app = FastAPI(title="News Recommendation API", version="1.0")
 
 mlflow.autolog()
+mlflow.set_experiment("news_recommendation")
 
 model_path = "mlruns/models/lightfm_model.pkl"
 
@@ -33,7 +40,6 @@ def load_local_model():
         print(f"Erro ao carregar o modelo: {e}")
         return None
 
-mlflow.set_experiment("news_recommendation")
 model = load_local_model()
 
 # Carregando dados dos usuários
@@ -41,9 +47,16 @@ try:
     with open(r"data\user_part_0.pkl", "rb") as f:
         user_data =  pickle.load(f)
         print("Debug: Dados de usuário carregados com sucesso!")
+
+        # Create user ID mapping
+        user_id_mapping = {user_id: i for i, user_id in enumerate(user_data['userId'].unique())}
+        # Add a new column with the integer user ID
+        user_data['integer_user_id'] = user_data['userId'].map(user_id_mapping)
+
 except FileNotFoundError:
     print("Error: user_part_0.pkl not found")
     user_data = None
+    user_id_mapping = None
 
 # Carregando dados das notícias
 try:
@@ -54,6 +67,7 @@ except FileNotFoundError:
     print("Error: news_label_0.pkl not found")
     news_data = None
 
+lightfm_model = LightFMWrapper(model)
 
 if model:
     print("Debug: Modelo carregado com sucesso!")
@@ -67,12 +81,16 @@ if model:
     except MlflowException:
         # Se o modelo não existir, registra no MLflow
         with mlflow.start_run():
-            mlflow.sklearn.log_model(model, model_name)
+            mlflow.pyfunc.log_model(
+                artifact_path = model_name,
+                python_model = lightfm_model,
+                registered_model_name=model_name
+            )
             mlflow.log_param("source", "local_file")
             mlflow.set_tag("model_type", "LightFM")
+            mlflow.pyfunc.save_model(path="mlruns\models\lightfm_mlflow", python_model=lightfm_model)
 
         print("Debug: Modelo registrado no MLflow!")
-
 
 print("\nRotas registradas na API:")
 for route in app.routes:
@@ -113,16 +131,22 @@ async def predict(user_id: str):  # Certifique-se de que user_id é um número
         if news_data is None:
             raise HTTPException(status_code=500, detail="News data not loaded.")
 
-        history = get_user_history(user_id, user_data)
-        if not history:
+        if user_id_mapping is None:
+            raise HTTPException(status_code=500, detail="User ID mapping not loaded.")
+
+        history_data = get_user_history(user_id, user_data, user_id_mapping)
+
+        if history_data is None:
             print("⚠️ Nenhum histórico encontrado, usando cold start.")
             recommendations = cold_start_recommendations(news_data)
             return {"user_id": user_id, "recommendations": recommendations}
 
+        history, integer_user_id = history_data
+
         if model is None:
              raise HTTPException(status_code=500, detail="Model not loaded.")
 
-        recommendations = predict_recommendations(model, user_id, history, news_data)
+        recommendations = predict_recommendations(model, integer_user_id, history, news_data)
         return {"user_id": user_id, "recommendations": recommendations}
 
     except Exception as e:
@@ -198,31 +222,6 @@ async def load_model_route():
     """
     response = load_latest_model("recommendation_model")
     return response
-
-@app.post("/recommend/{user_id}")
-async def recommend(user_id: str):
-    """
-    Realiza uma recomendação de teste para o usuário, utilizando seu histórico.
-    Caso o modelo não esteja carregado, retorna um erro.
-    """
-    if model is None:
-        raise HTTPException(status_code=500, detail="Modelo não carregado. Verifique MLflow.")
-
-    if user_data is None:
-        raise HTTPException(status_code=500, detail="User data not loaded.")
-
-    if news_data is None:
-        raise HTTPException(status_code=500, detail="News data not loaded.")
-
-    history = get_user_history(user_id, user_data)
-    if not history:
-        return {"status": "error", "message": "Histórico não encontrado para o usuário."}
-
-    try:
-        recommendations = predict_recommendations(model, user_id, history, news_data)
-        return {"status": "success", "recommendations": recommendations}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro na predição: {e}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080, reload=True)

@@ -12,55 +12,46 @@ def load_model(model_uri: str):
     return mlflow.pyfunc.load_model(model_uri)
 
 
-def predict_recommendations(model, user_id: str, history: list, news_data: pd.DataFrame):
+def predict_recommendations(model, user_id: int, history: list, news_data: pd.DataFrame):
     """
     Faz a previsão das recomendações baseado no histórico do usuário.
 
     Args:
         model: The LightFM model.
-        user_id (str): The ID of the user.
-        history (list): A list of item IDs (news article IDs) that the user has interacted with.
-        news_data (pd.DataFrame): The news data DataFrame.
+        user_id (int): O ID do usuário.
+        history (list): Lista de IDs dos artigos que o usuário interagiu.
+        news_data (pd.DataFrame): DataFrame com os dados das notícias.
 
     Returns:
-        list: A list of recommended item IDs.
+        list: Lista de IDs recomendados.
     """
     try:
-        # Convert user_id to integer (if it's not already)
-        user_id = int(user_id)
-
-        # Create item ID mapping
+        # Criar o mapeamento de IDs de item
         item_id_mapping = {item_id: i for i, item_id in enumerate(news_data['page'].unique())}
+        reverse_item_id_mapping = {i: item_id for item_id, i in item_id_mapping.items()}
         n_items = len(item_id_mapping)
 
-        # Create a sparse matrix representing the user's interactions
+        # Criar matriz esparsa das interações do usuário
         interactions = np.zeros(n_items)
         for item_id_str in history:
-            try:
-                item_id = item_id_mapping[item_id_str]  # Get the integer index from the mapping
-                interactions[item_id] = 1
-            except KeyError:
-                print(f"Warning: Item ID not found in mapping: {item_id_str}")
-                continue
-            except IndexError:
-                print(f"Warning: Item ID out of range: {item_id_str}")
-                continue
+            if item_id_str in item_id_mapping:  
+                interactions[item_id_mapping[item_id_str]] = 1
 
-        # Reshape the interactions array into a sparse matrix
-        user_interactions = sparse.csr_matrix(interactions)
+        # Passar todos os itens para predição
+        item_ids = np.arange(n_items)  # Todos os itens possíveis
 
-        # Generate predictions using the model
-        # Assuming the model's predict method takes a user ID and an interaction matrix
-        predictions = model.predict(user_ids=[user_id], item_features=user_interactions)
+        # Ajustar o tamanho do user_ids para corresponder ao número de item_ids
+        user_ids = np.full_like(item_ids, user_id)
 
-        # Rank the items based on their predicted scores
+        # Fazer previsão correta
+        predictions = model.predict(user_ids=user_ids, item_ids=item_ids)
+
+        # Ordenar os itens com maiores scores
         ranked_item_ids = np.argsort(-predictions)
 
-        # Return the top-N recommended item IDs
-        top_n = 10  # Replace with the desired number of recommendations
-        # Convert back to original item IDs
-        reverse_item_id_mapping = {i: item_id for item_id, i in item_id_mapping.items()}
-        recommended_item_ids = [reverse_item_id_mapping[i] for i in ranked_item_ids[:top_n].tolist()]
+        # Selecionar os top-N recomendados
+        top_n = 10  
+        recommended_item_ids = [reverse_item_id_mapping[i] for i in ranked_item_ids[:top_n]]
 
         return recommended_item_ids
 
@@ -69,7 +60,8 @@ def predict_recommendations(model, user_id: str, history: list, news_data: pd.Da
         return {"status": "error", "message": f"Erro na predição: {str(e)}"}
 
 
-def cold_start_recommendations(news_data: pd.DataFrame, top_n: int = 3):
+
+def cold_start_recommendations(news_data: pd.DataFrame, top_n: int = 10):
     """
     Retorna recomendações padrão para novos usuários (cold-start) based on most popular news.
 
@@ -84,19 +76,21 @@ def cold_start_recommendations(news_data: pd.DataFrame, top_n: int = 3):
         # Assuming news_data has a 'view_count' or similar column
         # Replace 'view_count' with the actual column name
         most_popular = news_data.sort_values(by='count', ascending=False)['page'].head(top_n).tolist()
-        return most_popular
+        return list(set(most_popular))
     except Exception as e:
         print(f"Error getting cold start recommendations: {e}")
         return ["Notícia 1", "Notícia 2", "Notícia 3"] # Fallback
 
 
 # Use essa função para resgatar o histórico de qualquer usuário com apenas o id de usuário
-def get_user_history(userId: str, data: pd.DataFrame):
+def get_user_history(userId: str, data: pd.DataFrame, user_id_mapping: dict):
     """
     Retorna o histórico de interações do usuário a partir do dataset user_part_0.
 
     Args:
         user_id (str): ID do usuário para recuperar o histórico.
+        data (pd.DataFrame): The user data DataFrame.
+        user_id_mapping (dict): A mapping between string user IDs and integer IDs.
 
     Returns:
         list: A list of item IDs representing the user's history, or None if the user is not found.
@@ -110,10 +104,47 @@ def get_user_history(userId: str, data: pd.DataFrame):
         history_str = user_data['history'].iloc[0]  # Access the first element of the Series
         history = [i.strip() for i in history_str]
 
-        return history  # Retorna como lista de item IDs
+        # Get the integer user ID from the mapping
+        integer_user_id = user_id_mapping.get(userId)
+        if integer_user_id is None:
+            print(f"Warning: User ID not found in mapping: {userId}")
+            return None
+
+        return history, integer_user_id  # Retorna como lista de item IDs e o ID do usuário
     except KeyError as e:
         print(f"Error: 'userId' or 'history' column not found in user data: {e}")
-        return None
+        return None, None
     except Exception as e:
         print(f"Error retrieving user history: {e}")
-        return None
+        return None, None
+    
+
+class LightFMWrapper(mlflow.pyfunc.PythonModel):
+    def __init__(self, model, ):
+        self.model = model
+
+    def predict(self, user_ids, item_ids, item_features = None, user_features = None,):
+        return self.model.predict(user_ids, item_ids, item_features=item_features, user_features=user_features)
+
+    def fit_partial(self, interactions, user_features=None, item_features=None, sample_weight=None, epochs=1, num_threads=1, verbose=False):
+        self.model.fit_partial(interactions, user_features=user_features, item_features=item_features, 
+                               sample_weight=sample_weight, epochs=epochs, num_threads=num_threads, verbose=verbose)
+
+    def get_params(self, deep=True):
+        return self.model.get_params(deep=deep)
+
+    def get_item_representations(self, features=None):
+        return self.model.get_item_representations(features=features)
+
+    def predict_rank(self, test_interactions, train_interactions=None, item_features=None, user_features=None, num_threads=1, check_intersections=True):
+        return self.model.predict_rank(test_interactions, train_interactions=train_interactions, item_features=item_features, 
+                                       user_features=user_features, num_threads=num_threads, check_intersections=check_intersections)
+
+    def save_model(self, path):
+        with open(path, "wb") as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load_model(cls, path):
+        with open(path, "rb") as f:
+            return pickle.load(f)

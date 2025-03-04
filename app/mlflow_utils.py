@@ -2,6 +2,8 @@ import mlflow
 import mlflow.pyfunc
 
 MLFLOW_TRACKING_URI = "http://localhost:5000"
+
+MLFLOW_TRACKING_URI = "sqlite:///mlflow.db"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 def load_latest_model(model_name = "recommendation_model") -> dict:
