@@ -30,7 +30,7 @@ def predict_recommendations(model, user_id: str, history: list, news_data: pd.Da
         user_id = int(user_id)
 
         # Create item ID mapping
-        item_id_mapping = {item_id: i for i, item_id in enumerate(news_data['newsId'].unique())}
+        item_id_mapping = {item_id: i for i, item_id in enumerate(news_data['page'].unique())}
         n_items = len(item_id_mapping)
 
         # Create a sparse matrix representing the user's interactions
@@ -83,7 +83,7 @@ def cold_start_recommendations(news_data: pd.DataFrame, top_n: int = 3):
     try:
         # Assuming news_data has a 'view_count' or similar column
         # Replace 'view_count' with the actual column name
-        most_popular = news_data.sort_values(by='popularity', ascending=False)['newsId'].head(top_n).tolist()
+        most_popular = news_data.sort_values(by='count', ascending=False)['page'].head(top_n).tolist()
         return most_popular
     except Exception as e:
         print(f"Error getting cold start recommendations: {e}")
