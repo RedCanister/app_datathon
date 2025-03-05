@@ -47,7 +47,7 @@ else:
     if st.button("Recomendar Notícias"):
         if user_id:
             try:
-                response = requests.post(f"{API_URL}/predict", params={"user_id": user_id})
+                response = requests.post(f"{API_URL}/predict/{user_id}")  # user_id na URL
                 if response.status_code == 200:
                     recommendations = response.json().get("recommendations", [])
                     st.success("Aqui estão suas recomendações personalizadas:")
