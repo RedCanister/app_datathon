@@ -5,7 +5,7 @@ from app.model_utils import LightFMWrapper
 
 MLFLOW_TRACKING_URI = "http://localhost:5000"
 
-MLFLOW_TRACKING_URI = "sqlite:///mlflow.db"
+#MLFLOW_TRACKING_URI = "sqlite:///mlflow.db"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 def load_latest_model(model_name = "recommendation_model") -> dict:
@@ -57,6 +57,7 @@ def log_model_to_mlflow(model_path: str) -> dict:
             )
         mlflow.log_param("model_version", "latest")
         mlflow.log_param("no_components", lightfm_model.get_params()['no_components'])
+        mlflow.log_param("learning_rate", lightfm_model.get_params()['learning_rate'])
         mlflow.log_param("learning_rate", lightfm_model.get_params()['learning_rate'])
         mlflow.log_param("k", lightfm_model.get_params()['k'])
         run_id = run.info.run_id

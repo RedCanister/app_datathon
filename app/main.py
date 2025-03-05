@@ -174,7 +174,7 @@ async def cold_start():
 
 """SEÇÃO DO MLFLOW"""
 
-@app.post("/log_model")
+@app.post("/log_model/")
 async def log_model(model_path: str):
     """
     Registra um novo modelo treinado no MLflow.

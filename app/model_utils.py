@@ -25,6 +25,7 @@ def predict_recommendations(model, user_id: int, history: list, news_data: pd.Da
     Returns:
         list: Lista de IDs recomendados.
     """
+
     try:
         # Criar o mapeamento de IDs de item
         item_id_mapping = {item_id: i for i, item_id in enumerate(news_data['page'].unique())}
@@ -42,9 +43,9 @@ def predict_recommendations(model, user_id: int, history: list, news_data: pd.Da
 
         # Ajustar o tamanho do user_ids para corresponder ao número de item_ids
         user_ids = np.full_like(item_ids, user_id)
-
+        
         # Fazer previsão correta
-        predictions = model.predict(user_ids=user_ids, item_ids=item_ids)
+        predictions = model.predict(user_ids, item_ids)
 
         # Ordenar os itens com maiores scores
         ranked_item_ids = np.argsort(-predictions)
@@ -120,8 +121,10 @@ def get_user_history(userId: str, data: pd.DataFrame, user_id_mapping: dict):
     
 
 class LightFMWrapper(mlflow.pyfunc.PythonModel):
-    def __init__(self, model, ):
+    def __init__(self, model, item_features=None, user_features=None):
         self.model = model
+        self.item_features = item_features
+        self.user_features = user_features
 
     def predict(self, user_ids, item_ids, item_features = None, user_features = None,):
         return self.model.predict(user_ids, item_ids, item_features=item_features, user_features=user_features)
