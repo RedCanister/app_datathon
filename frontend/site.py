@@ -10,8 +10,8 @@ st.set_page_config(layout="wide")
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-def login(username, password):
-    if username == "admin" and password == "123":
+def login(username):
+    if username == "admin":
         st.session_state.logged_in = True
         st.success("Login realizado com sucesso!")
     else:
@@ -20,9 +20,8 @@ def login(username, password):
 with st.sidebar:
     st.title("🔑 Login")
     username = st.text_input("Usuário")
-    password = st.text_input("Senha", type="password")
     if st.button("Login"):
-        login(username, password)
+        login(username)
 
 st.title("🔍 Sistema de Recomendações")
 
