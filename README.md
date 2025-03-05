@@ -117,7 +117,7 @@ docker-compose up --build
 | GET    | `/get_experiment_metrics` | Busca métricas do experimento         |
 | GET    | `/list_models`       | Lista todos os modelos registrados      |
 | GET    | `/load_model`        | Carrega o modelo mais recente           |
-| GET    | `/recommend`         | Gera recomendações para um usuário      |
+| GET    | `/predict`         | Gera recomendações para um usuário      |
 
 ## Integração com MLflow
 
@@ -129,11 +129,11 @@ docker-compose up --build
 
 - **LightFM:** Filtragem colaborativa e baseada em conteúdo.
 - **Cold-Start:** Recomendações por popularidade ou características do conteúdo.
-- **Endpoint:** `/recommend`
+- **Endpoint:** `/predict`
 
 ## Uso com Streamlit
 
-- Chama o endpoint `/recommend`.
+- Chama o endpoint `/predict`.
 - Exibe informações via `/get_model_info` e `/get_experiment_metrics`.
 - Permite registro e atualização de modelos.
 
