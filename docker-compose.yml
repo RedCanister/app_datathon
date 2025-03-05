@@ -8,11 +8,31 @@ services:
     environment:
       MLFLOW_TRACKING_URI: "http://localhost:5000"
     command: mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
 
   fastapi:
     build: .
     ports:
-      - "8000:8000"
+      - "8080:8080"
     depends_on:
-      - mlflow
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      mlflow:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/docs"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+
+  streamlit:
+    build: .
+    depends_on:
+      fastapi:
+        condition: service_healthy
+    command: streamlit run frontend/site.py
+    ports:
+      - "8501:8501"
