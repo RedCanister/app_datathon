@@ -4,6 +4,9 @@ import requests
 API_URL = "http://127.0.0.1:8080"  # Se FastAPI estiver em 8000
 
 st.set_page_config(layout="wide")
+# Inicializa a sessão
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
 # Inicializa o dicionário de userIds e o contador no session_state
 if "user_ids" not in st.session_state:
