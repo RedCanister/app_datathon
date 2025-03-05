@@ -1,5 +1,7 @@
 import mlflow
 import mlflow.pyfunc
+import pickle
+from app.model_utils import LightFMWrapper
 
 MLFLOW_TRACKING_URI = "http://localhost:5000"
 
@@ -32,7 +34,7 @@ def load_latest_model(model_name = "recommendation_model") -> dict:
             "model": None
         }
 
-def log_model_to_mlflow(model_path = "recommendation_model") -> dict:
+def log_model_to_mlflow(model_path: str) -> dict:
     """
     Registra um novo modelo treinado no MLflow e retorna informações sobre o registro.
 
@@ -42,12 +44,21 @@ def log_model_to_mlflow(model_path = "recommendation_model") -> dict:
     Returns:
         dict: Dicionário com status, mensagem e o run_id do MLflow.
     """
+    with open(model_path, "rb") as f:
+            model =  pickle.load(f)
+
+    lightfm_model = LightFMWrapper(model)
+
     with mlflow.start_run() as run:
         mlflow.pyfunc.log_model(
-            artifact_path=model_path, 
-            registered_model_name="recommendation_model", 
+                artifact_path = "mlruns/models/recommendation_model",
+                python_model = lightfm_model,
+                registered_model_name="recommendation_model" 
             )
         mlflow.log_param("model_version", "latest")
+        mlflow.log_param("no_components", lightfm_model.get_params()['no_components'])
+        mlflow.log_param("learning_rate", lightfm_model.get_params()['learning_rate'])
+        mlflow.log_param("k", lightfm_model.get_params()['k'])
         run_id = run.info.run_id
     return {
         "status": "success",
@@ -64,8 +75,11 @@ def get_model_info() -> dict:
     """
     client = mlflow.tracking.MlflowClient()
     model_name = "recommendation_model"
+
     try:
-        model_versions = client.get_latest_versions(model_name, stages=["None"])
+        # Obter todas as versões do modelo (já que stages serão removidos no futuro)
+        model_versions = client.search_model_versions(f"name='{model_name}'")
+
         models_info = []
         for mv in model_versions:
             models_info.append({
@@ -74,9 +88,11 @@ def get_model_info() -> dict:
                 "status": mv.status,
                 "creation_timestamp": mv.creation_timestamp,
                 "run_id": mv.run_id,
-                "artifact_uri": mv.artifact_uri
+                "artifact_uri": client.get_model_version_download_uri(model_name, mv.version)  # Forma correta de obter o caminho do artefato
             })
+            
         return {"status": "success", "model_info": models_info}
+    
     except Exception as e:
         return {"status": "error", "message": f"Erro ao obter informações do modelo: {e}"}
 
@@ -90,7 +106,7 @@ def get_experiment_metrics() -> dict:
     client = mlflow.tracking.MlflowClient()
     experiments = client.search_experiments()
     if experiments:
-        latest_experiment = experiments[-1]
+        latest_experiment = experiments[0]
         experiment_data = {
             "experiment_id": latest_experiment.experiment_id,
             "name": latest_experiment.name,

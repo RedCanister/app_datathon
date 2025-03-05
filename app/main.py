@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from mlflow.exceptions import MlflowException
-from pydantic import BaseModel
 import pandas as pd
 import os
 import pickle
@@ -175,16 +174,13 @@ async def cold_start():
 
 """SEÇÃO DO MLFLOW"""
 
-class ModelInput(BaseModel):
-    model_path: str
-
 @app.post("/log_model")
-async def log_model(model_input: ModelInput):
+async def log_model(model_path: str):
     """
     Registra um novo modelo treinado no MLflow.
     """
     try:
-        response = log_model_to_mlflow()
+        response = log_model_to_mlflow(model_path)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
