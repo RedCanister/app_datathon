@@ -1,5 +1,14 @@
 import streamlit as st
 import requests
+import html
+import re
+
+def clean_text(text):
+    # Decodifica caracteres HTML
+    text = html.unescape(text)
+    # Remove quebras de linha e espaços extras
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 API_URL = "http://127.0.0.1:8080"  # Se FastAPI estiver em 8000
 
@@ -43,12 +52,99 @@ if not st.session_state.logged_in:
     response = requests.get(f"{API_URL}/cold_start")
     if response.status_code == 200:
         recommendations = response.json().get("recommendations", [])
-        cols = st.columns(3)
-        for index, rec in enumerate(recommendations):
-            with cols[index % 3]:
-                st.markdown(f"<div style='border: 1px solid #ccc; padding: 10px; text-align: center; border-radius: 10px;'>🔖 {rec}</div>", unsafe_allow_html=True)
+
+        # Exibir títulos e trechos das notícias
+        st.header("Notícias Recomendadas (Cold Start)")
+        news_data_response = requests.get(f"{API_URL}/get_news_data")
+        if news_data_response.status_code == 200:
+            news_data = news_data_response.json()
+            cols = st.columns(3)  # Cria colunas para exibir as notícias em layout de grade
+
+            for index, rec in enumerate(recommendations):
+                noticia = next((item for item in news_data if item.get("page") == rec), None)
+                if noticia:
+                    titulo = clean_text(noticia.get("title", "Título não disponível"))
+                    corpo = clean_text(noticia.get("body", "Corpo não disponível"))
+                    caption = clean_text(noticia.get("caption", "Caption não disponível"))
+                    count = noticia.get("count", "Count não disponível")
+
+                    with cols[index % 3]:
+                        st.markdown(f"""
+                            <style>
+                                .news-card {{
+                                    border: 1px solid #ccc;
+                                    padding: 10px;
+                                    text-align: center;
+                                    border-radius: 10px;
+                                    margin: 10px;
+                                    height: 200px;
+                                    display: flex;
+                                    flex-direction: column;
+                                    justify-content: space-between;
+                                    overflow: hidden;
+                                    transition: transform 0.3s ease-in-out;
+                                    position: relative;
+                                    cursor: pointer;
+                                }}
+                                .news-card:hover {{
+                                    transform: scale(1.1);
+                                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                                    background-color: #f9f9f9;
+                                    z-index: 10;
+                                }}
+                                .popup {{
+                                    display: none;
+                                    position: absolute;
+                                    top: 0;
+                                    left: 0;
+                                    width: 100%;
+                                    height: 100%;
+                                    background-color: rgba(255, 255, 255, 0.95);
+                                    padding: 20px;
+                                    overflow-y: auto;
+                                    border: 1px solid #ccc;
+                                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                                    z-index: 100;
+                                    text-align: center;
+                                }}
+                                .news-card:hover .popup {{
+                                    display: block;
+                                }}
+                            </style>
+                            <div class="news-card">
+                                <h5><b>{titulo}</b></h5>
+                                <p>{caption}...</p>
+                                <div class="popup">
+                                    <h3>{titulo}</h3>
+                                    <p>{corpo}</p>
+                                    <p>Visualizações:{count}</p>
+                                </div>
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                else:
+                    with cols[index % 3]:
+                        st.markdown(f"""
+                            <div style='border: 1px solid #ccc; padding: 10px; text-align: center; border-radius: 10px; margin: 10px; height: 150px; display: flex; flex-direction: column; justify-content: center;'>
+                                Notícia não encontrada para page: {rec}
+                            </div>
+                        """, unsafe_allow_html=True)
+
+        else:
+            st.error(f"Erro ao buscar news_data: {news_data_response.status_code}")
+
     else:
         st.error(f"Erro ao buscar recomendações! Código: {response.status_code}")
+
+
+#  # Exibir news_data
+#     st.header("Dados das Notícias (news_data)")
+#     news_data_response = requests.get(f"{API_URL}/get_news_data")
+#     if news_data_response.status_code == 200:
+#         news_data = news_data_response.json()
+#         st.json(news_data)  # Exibe news_data como JSON
+#     else:
+#         st.error(f"Erro ao buscar news_data: {news_data_response.status_code}")
 
 else:
     st.success(f"Bem-vindo {st.session_state.username}!")
