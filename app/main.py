@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from mlflow.exceptions import MlflowException
 from pydantic import BaseModel
 import pandas as pd
+import os
 import pickle
 import mlflow
 import uvicorn
@@ -78,6 +79,14 @@ if model:
         # Tenta buscar o modelo no Model Registry
         registered_model = mlflow.pyfunc.load_model(f"models:/{model_name}/latest")
         print(f"Debug: Modelo '{model_name}' já existe no MLflow. Não será registrado novamente.")
+    except OSError as e:
+        alternative_path = "mlruns/models/recommendation_model"
+
+        if os.path.exists(alternative_path):
+            print("Modelo encontrado em caminho alternativo...")
+            registered_model = mlflow.pyfunc.load_model(alternative_path)
+        else:
+            print("Modelo não encontrado. Treino ou regisre outro modelo.")
     except MlflowException:
         # Se o modelo não existir, registra no MLflow
         with mlflow.start_run():
