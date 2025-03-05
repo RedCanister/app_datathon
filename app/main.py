@@ -228,5 +228,14 @@ async def load_model_route():
     response = load_latest_model("recommendation_model")
     return response
 
+@app.get("/get_news_data")
+async def get_news_data():
+    """
+    Retorna os dados das notícias.
+    """
+    if news_data is None:
+        raise HTTPException(status_code=500, detail="News data not loaded.")
+    return news_data.to_dict(orient='records') #Converte dataframe para dicionário
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080, reload=True)
