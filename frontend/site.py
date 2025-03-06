@@ -38,7 +38,7 @@ def login():
     st.session_state.user_index = (st.session_state.user_index + 1) % len(st.session_state.user_ids)  # Incrementa o contador circularmente
     st.session_state.user_id = user_id # Armazena o user_id para usar nas recomendações
 
-    st.success(f"Login realizado com sucesso! UserId usado: {user_id}")
+    st.success(f"Login realizado com sucesso!")
 
 with st.sidebar:
     st.title("🔑 Login")
@@ -150,22 +150,90 @@ else:
     st.success(f"Bem-vindo {st.session_state.username}!")
 
     st.header("📄 Recomendações Personalizadas")
+    response = requests.post(f"{API_URL}/predict/{st.session_state.user_id}")  # user_id na URL
+    if response.status_code == 200:
+        recommendations = response.json().get("recommendations", [])
+        # Exibir títulos e trechos das notícias
+        st.header("Notícias Recomendadas (Cold Start)")
+        news_data_response = requests.get(f"{API_URL}/get_news_data")
+        if news_data_response.status_code == 200:
+            news_data = news_data_response.json()
+            cols = st.columns(3)  # Cria colunas para exibir as notícias em layout de grade
 
-    if st.button("Recomendar Notícias"):
-        try:
-            response = requests.post(f"{API_URL}/predict/{st.session_state.user_id}")  # user_id na URL
-            if response.status_code == 200:
-                recommendations = response.json().get("recommendations", [])
-                st.success("Aqui estão suas recomendações personalizadas:")
-                if recommendations:
-                    for rec in recommendations:
-                        st.write(f"- {rec}")
+            for index, rec in enumerate(recommendations):
+                noticia = next((item for item in news_data if item.get("page") == rec), None)
+                if noticia:
+                    titulo = clean_text(noticia.get("title", "Título não disponível"))
+                    corpo = clean_text(noticia.get("body", "Corpo não disponível"))
+                    caption = clean_text(noticia.get("caption", "Caption não disponível"))
+                    count = noticia.get("count", "Count não disponível")
+
+                    with cols[index % 3]:
+                        st.markdown(f"""
+                            <style>
+                                .news-card {{
+                                    border: 1px solid #ccc;
+                                    padding: 10px;
+                                    text-align: center;
+                                    border-radius: 10px;
+                                    margin: 10px;
+                                    height: 200px;
+                                    display: flex;
+                                    flex-direction: column;
+                                    justify-content: space-between;
+                                    overflow: hidden;
+                                    transition: transform 0.3s ease-in-out;
+                                    position: relative;
+                                    cursor: pointer;
+                                }}
+                                .news-card:hover {{
+                                    transform: scale(1.1);
+                                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                                    background-color: #f9f9f9;
+                                    z-index: 10;
+                                }}
+                                .popup {{
+                                    display: none;
+                                    position: absolute;
+                                    top: 0;
+                                    left: 0;
+                                    width: 100%;
+                                    height: 100%;
+                                    background-color: rgba(255, 255, 255, 0.95);
+                                    padding: 20px;
+                                    overflow-y: auto;
+                                    border: 1px solid #ccc;
+                                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                                    z-index: 100;
+                                    text-align: center;
+                                }}
+                                .news-card:hover .popup {{
+                                    display: block;
+                                }}
+                            </style>
+                            <div class="news-card">
+                                <h5><b>{titulo}</b></h5>
+                                <p>{caption}...</p>
+                                <div class="popup">
+                                    <h3>{titulo}</h3>
+                                    <p>{corpo}</p>
+                                    <p>Visualizações:{count}</p>
+                                </div>
+                            </div>
+                        """, unsafe_allow_html=True)
+
                 else:
-                    st.info("Nenhuma recomendação disponível.")
-            else:
-                st.error(f"Erro ao buscar recomendações! Código: {response.status_code}")
-        except Exception as e:
-            st.error(f"Erro ao processar a requisição: {e}")
+                    with cols[index % 3]:
+                        st.markdown(f"""
+                            <div style='border: 1px solid #ccc; padding: 10px; text-align: center; border-radius: 10px; margin: 10px; height: 150px; display: flex; flex-direction: column; justify-content: center;'>
+                                Notícia não encontrada para page: {rec}
+                            </div>
+                        """, unsafe_allow_html=True)
+
+        else:
+            st.error(f"Erro ao buscar news_data: {news_data_response.status_code}")
+    else:
+        st.error(f"Erro ao buscar recomendações! Código: {response.status_code}")
 
     # Seção de Monitoramento do MLflow
     st.header("📊 Monitoramento do Modelo")
