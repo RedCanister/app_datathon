@@ -1,38 +1,54 @@
-version: '3.8'
 
 services:
   mlflow:
+    container_name: mlflow
     image: ghcr.io/mlflow/mlflow:latest
     ports:
       - "5000:5000"
     environment:
-      MLFLOW_TRACKING_URI: "http://localhost:5000"
+      MLFLOW_TRACKING_URI: "http://mlflow:5000"
     command: mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      test: ["CMD", "curl", "-f", "http://mlflow:5000"]
       interval: 10s
       retries: 5
       start_period: 10s
+    networks:
+      - app_network
 
   fastapi:
+    container_name: fastapi
     build: .
     ports:
       - "8080:8080"
     depends_on:
       mlflow:
         condition: service_healthy
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/docs"]
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:8080/docs"]
       interval: 10s
       retries: 5
       start_period: 10s
+    networks:
+      - app_network
 
   streamlit:
+    container_name: streamlit
     build: .
+    ports:
+      - "8501:8501"
     depends_on:
       fastapi:
         condition: service_healthy
-    command: streamlit run frontend/site.py
-    ports:
-      - "8501:8501"
+    environment:
+      - FASTAPI_URL=http://fastapi:8080
+    command: streamlit run frontend/site.py --server.port 8501 --server.address 0.0.0.0
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
