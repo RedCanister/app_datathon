@@ -107,6 +107,14 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 docker-compose up --build
 ```
 
+### Manualmente
+Caso encontre algum problema na utilização do contâiner do Docker feito para esse Datathon, experimente utilizar o inicializador start.sh
+
+```bash
+chmod +X start.sh
+./start.sh
+```
+
 ## Endpoints da API
 
 | Método | Endpoint               | Descrição                                |
