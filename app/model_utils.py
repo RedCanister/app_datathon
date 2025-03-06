@@ -3,7 +3,9 @@ import pandas as pd
 import numpy as np
 import pickle
 from scipy import sparse
+from app.mlflow_utils import mlflow_logger
 import os
+
 
 def load_model(model_uri: str):
     """
@@ -11,7 +13,7 @@ def load_model(model_uri: str):
     """
     return mlflow.pyfunc.load_model(model_uri)
 
-
+@mlflow_logger("news_recommendation")
 def predict_recommendations(model, user_id: int, history: list, news_data: pd.DataFrame):
     """
     Faz a previsão das recomendações baseado no histórico do usuário.
@@ -126,7 +128,7 @@ class LightFMWrapper(mlflow.pyfunc.PythonModel):
         self.item_features = item_features
         self.user_features = user_features
 
-    def predict(self, user_ids, item_ids, item_features = None, user_features = None,):
+    def predict(self, user_ids: list[str], item_ids: list[str], item_features = None, user_features = None,):
         return self.model.predict(user_ids, item_ids, item_features=item_features, user_features=user_features)
 
     def fit_partial(self, interactions, user_features=None, item_features=None, sample_weight=None, epochs=1, num_threads=1, verbose=False):
