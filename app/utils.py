@@ -33,8 +33,8 @@ class LightFMWrapper(mlflow.pyfunc.PythonModel):
     @classmethod
     def load_model(cls, path):
         with open(path, "rb") as f:
-            return pickle.load(f)
-        
+            return pickle.load(f)     
+
 def mlflow_logger(experiment_name="default_experiment"):
     """
         Decorador para registrar automaticamente métricas, parâmetros e artefatos no MLflow.

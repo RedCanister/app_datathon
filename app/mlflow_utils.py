@@ -2,10 +2,8 @@ import mlflow
 import mlflow.pyfunc
 import pickle
 from app.utils import LightFMWrapper, mlflow_logger
-import time
-import functools
 
-MLFLOW_TRACKING_URI = "http://localhost:5000"
+MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
 
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 

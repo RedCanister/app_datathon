@@ -3,7 +3,7 @@ import requests
 import pickle
 import html
 import re
-
+import os
 
 def clean_text(text):
     # Decodifica caracteres HTML
@@ -12,8 +12,8 @@ def clean_text(text):
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-API_URL = "http://127.0.0.1:8080"  # Se FastAPI estiver em 8000
-MLFLOW_URL = "http://127.0.0.1:5000"
+MLFLOW_URL = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")  # Se FastAPI estiver em 8000
+API_URL = os.getenv("FASTAPI_URL", "http://localhost:8080")
 
 st.set_page_config(layout="wide")
 # Inicializa a sessão

@@ -1,11 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from mlflow.exceptions import MlflowException
-import pandas as pd
 import os
+import sys
 import pickle
 import mlflow
 import uvicorn
-from app.utils import LightFMWrapper
 from app.mlflow_utils import (
     log_model_to_mlflow,
     get_model_info,
@@ -15,17 +14,18 @@ from app.mlflow_utils import (
     load_latest_model
 )
 from app.model_utils import (
-    load_model, 
     predict_recommendations, 
     cold_start_recommendations, 
-    get_user_history,
+    get_user_history
 )
+from app.utils import LightFMWrapper
 
 app = FastAPI(title="News Recommendation API", version="1.0")
 
 mlflow.autolog()
 mlflow.set_experiment("news_recommendation")
 
+sys.path.append("app/utils")
 model_path = "mlruns/models/lightfm_model.pkl"
 
 # Carregar o modelo com pickle no startup
@@ -85,7 +85,7 @@ if model:
             print("Modelo encontrado em caminho alternativo...")
             registered_model = mlflow.pyfunc.load_model(alternative_path)
         else:
-            print("Modelo não encontrado. Treino ou regisre outro modelo.")
+            print("Modelo não encontrado. Treino ou registre outro modelo.")
     except MlflowException:
         # Se o modelo não existir, registra no MLflow
         with mlflow.start_run():
@@ -238,4 +238,4 @@ async def get_news_data():
     return news_data.to_dict(orient='records') #Converte dataframe para dicionário
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080, reload=True)
+    uvicorn.run(app, host="127.0.0.1", port=8080, reload=True)

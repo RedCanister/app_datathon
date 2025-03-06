@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "🚀 Iniciando MLflow..."
-mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000 &
+mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 127.0.0.1 --port 5000 &
 
 echo "⏳ Aguardando MLflow iniciar..."
 sleep 10  # Dá tempo para MLflow iniciar
