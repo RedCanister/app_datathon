@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 from scipy import sparse
-from app.mlflow_utils import mlflow_logger
+from app.utils import mlflow_logger, LightFMWrapper
 import os
 
 
@@ -121,35 +121,3 @@ def get_user_history(userId: str, data: pd.DataFrame, user_id_mapping: dict):
         print(f"Error retrieving user history: {e}")
         return None, None
     
-
-class LightFMWrapper(mlflow.pyfunc.PythonModel):
-    def __init__(self, model, item_features=None, user_features=None):
-        self.model = model
-        self.item_features = item_features
-        self.user_features = user_features
-
-    def predict(self, user_ids: list[str], item_ids: list[str], item_features = None, user_features = None,):
-        return self.model.predict(user_ids, item_ids, item_features=item_features, user_features=user_features)
-
-    def fit_partial(self, interactions, user_features=None, item_features=None, sample_weight=None, epochs=1, num_threads=1, verbose=False):
-        self.model.fit_partial(interactions, user_features=user_features, item_features=item_features, 
-                               sample_weight=sample_weight, epochs=epochs, num_threads=num_threads, verbose=verbose)
-
-    def get_params(self, deep=True):
-        return self.model.get_params(deep=deep)
-
-    def get_item_representations(self, features=None):
-        return self.model.get_item_representations(features=features)
-
-    def predict_rank(self, test_interactions, train_interactions=None, item_features=None, user_features=None, num_threads=1, check_intersections=True):
-        return self.model.predict_rank(test_interactions, train_interactions=train_interactions, item_features=item_features, 
-                                       user_features=user_features, num_threads=num_threads, check_intersections=check_intersections)
-
-    def save_model(self, path):
-        with open(path, "wb") as f:
-            pickle.dump(self, f)
-
-    @classmethod
-    def load_model(cls, path):
-        with open(path, "rb") as f:
-            return pickle.load(f)

@@ -1,14 +1,12 @@
 import mlflow
 import mlflow.pyfunc
 import pickle
-from app.model_utils import LightFMWrapper
-from app.mlflow_utils import mlflow_logger
+from app.utils import LightFMWrapper, mlflow_logger
 import time
 import functools
 
 MLFLOW_TRACKING_URI = "http://localhost:5000"
 
-#MLFLOW_TRACKING_URI = "sqlite:///mlflow.db"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 def load_latest_model(model_name = "recommendation_model") -> dict:
@@ -172,49 +170,3 @@ def update_model(model_path: str) -> dict:
             "message": f"Erro ao atualizar o modelo: {e}",
             "model": None
         }
-
-def mlflow_logger(experiment_name="default_experiment"):
-    """
-        Decorador para registrar automaticamente métricas, parâmetros e artefatos no MLflow.
-    """
-
-    def decorator(func):
-        
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            mlflow.set_experiment(experiment_name)
-
-            with mlflow.start_run():
-                start_time = time.time()
-
-                # Logando os parâmetros passados para a função
-                mlflow.log_params({f"param_{i}": arg for i, arg in enumerate(args)})
-                mlflow.log_params(kwargs)
-
-                try:
-                    # Executar a função e capturar o resultado
-                    result = func(*args, **kwargs)
-
-                    # Logando métricas
-                    execution_time = time.time() - start_time
-                    mlflow.log_metric("execution_time", execution_time)
-
-                    # Se o resultado for um dicionário, registrar as métricas nele
-                    if isinstance(result, dict):
-                        for key, value in result.items():
-                            if isinstance(value, (int, float)):
-                                mlflow.log_metric(key, value)
-                    
-                    # Se houver um modelo treinado no resultado, salvar
-                    if "model" in kwargs:
-                        mlflow.pyfunc.log_model(kwargs["model"], "model")
-            
-                except Exception as e:
-                    mlflow.log_param("error", str(e))
-                    raise e
-                
-            return result
-            
-        return wrapper
-    
-    return decorator

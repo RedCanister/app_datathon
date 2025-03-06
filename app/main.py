@@ -5,6 +5,7 @@ import os
 import pickle
 import mlflow
 import uvicorn
+from app.utils import LightFMWrapper
 from app.mlflow_utils import (
     log_model_to_mlflow,
     get_model_info,
@@ -18,7 +19,6 @@ from app.model_utils import (
     predict_recommendations, 
     cold_start_recommendations, 
     get_user_history,
-    LightFMWrapper
 )
 
 app = FastAPI(title="News Recommendation API", version="1.0")
