@@ -44,6 +44,32 @@ with st.sidebar:
     st.title("🔑 Login")
     if st.button("Login"):
         login()
+        # Seção de Monitoramento do MLflow
+    st.header("📊 Monitoramento do Modelo")
+    if st.button("Ver Informações do Modelo"):
+        model_response = requests.get(f"{API_URL}/get_model_info")
+        if model_response.status_code == 200:
+            model_info = model_response.json()
+            st.json(model_info)
+        else:
+            st.error("Erro ao buscar informações do modelo.")
+
+    if st.button("Ver Métricas"):
+        metrics_response = requests.get(f"{API_URL}/get_experiment_metrics")
+        if metrics_response.status_code == 200:
+            metrics = metrics_response.json()
+            st.json(metrics)
+        else:
+            st.error("Erro ao buscar métricas.")
+
+    if st.button("Listar Modelos"):
+        models_response = requests.get(f"{API_URL}/list_models")
+        if models_response.status_code == 200:
+            models = models_response.json()
+            st.json(models)
+        else:
+            st.error("Erro ao listar modelos.")
+
 
 st.title("🔍 Sistema de Recomendações")
 
@@ -235,28 +261,4 @@ else:
     else:
         st.error(f"Erro ao buscar recomendações! Código: {response.status_code}")
 
-    # Seção de Monitoramento do MLflow
-    st.header("📊 Monitoramento do Modelo")
-    if st.button("Ver Informações do Modelo"):
-        model_response = requests.get(f"{API_URL}/get_model_info")
-        if model_response.status_code == 200:
-            model_info = model_response.json()
-            st.json(model_info)
-        else:
-            st.error("Erro ao buscar informações do modelo.")
-
-    if st.button("Ver Métricas"):
-        metrics_response = requests.get(f"{API_URL}/get_experiment_metrics")
-        if metrics_response.status_code == 200:
-            metrics = metrics_response.json()
-            st.json(metrics)
-        else:
-            st.error("Erro ao buscar métricas.")
-
-    if st.button("Listar Modelos"):
-        models_response = requests.get(f"{API_URL}/list_models")
-        if models_response.status_code == 200:
-            models = models_response.json()
-            st.json(models)
-        else:
-            st.error("Erro ao listar modelos.")
+    
