@@ -12,6 +12,8 @@ Este repositório hospeda um sistema de recomendação de notícias que utiliza:
 - **Streamlit** para a interface front-end.
 - **Docker** para conteinerização e implantação.
 
+- [Vídeo de demonstração](https://youtu.be/o9JE_C-G7l8)
+
 ## Índice
 
 - [Visão Geral](#visão-geral)
